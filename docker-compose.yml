@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/partnerapi.db
+      # Leave ADMIN_PASSWORD unset to get a random one (see README).
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Set to 0 in a real deployment so no sample users are created.
+      SEED_SAMPLE_USERS: ${SEED_SAMPLE_USERS:-1}
+    volumes:
+      - app_data:/data
+    expose:
+      - "8000"          # reachable by the proxy only; deliberately NOT published
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "8443:8443"     # the only published port
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # keeps the self-signed CA/certificate stable across restarts
+      - caddy_config:/config
+
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:

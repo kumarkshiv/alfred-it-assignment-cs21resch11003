@@ -1,0 +1,21 @@
+{
+	admin off
+	auto_https disable_redirects
+}
+
+# HTTPS on 8443 with a certificate from Caddy's own internal (self-signed) CA.
+localhost:8443, 127.0.0.1:8443 {
+	tls internal
+
+	request_body {
+		max_size 1MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	reverse_proxy app:8000
+}
